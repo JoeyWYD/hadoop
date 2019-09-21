@@ -1,0 +1,112 @@
+﻿hive的数据类型：
+常用的有int 32位，bigint 64位。
+字符串类型：string。
+当你不知道数据类型如何设置的时候，你可以先全部搞成string。
+
+复杂数据类型建表：以array为例：
+create table score(name string,score array<int>) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' COLLECTION ITEMS TERMINATED BY ',' ;
+
+数据格式例子：
+huangyi 60,65,59
+nizhou  90,80,60
+
+查询数组的某个元素，通过下标获取：
+select score[0] from score; //这个是获取数组的第一个元素。
+hive的SQL操作：
+1，hivesql和标准sql有一些差异。
+比如：
+
+1.1 hivesql的where后面的查询语句不能跟子查询，可以转成join。
+1.2 hivesql在0.14版本之前是不支持update和delete操作的。在之后版本可以支持，但是默认不打开，需要修改配置文件。
+ 就是hive支持分区表查询和建表。mysql中没有分区的概念。
+ 重点：如果需要批量或者小规模更新数据，可以曲线救国：
+ 可以新建一个临时表，将原来的数据select 进行逻辑处理，插入临时表。
+ 然后 会写覆盖到原表。
+ insert into emp_update select empno,if(ename='SMITH','shangdan',ename) as ename,job
+,mgr,hiredate,sal,comm,deptno from emp;
+然后
+insert  overwrite table emp select * from emp_update;
+1.3 hive默认不支持不等值连接。
+1.4 hive 的group by 必须要将select 中的字段 全部放到group by 后面。
+
+ hive的高级函数：
+ concat_ws：将集合的数据拼接在一起。
+ 日期函数，条件判断函数，类型转换函数等
+create table score(name string,score array<string>) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' COLLECTION ITEMS TERMINATED BY ',' ;
+hive高级函数：窗口函数，也叫开窗函数。
+row_number() over(partition by deptno order by sal desc ) 是对每组的每一行数据后面 打上行号。
+一般用于组内排序求topN，N>1;
+select empno, ename, job, mgr, hiredate, sal, comm, deptno from (select *,row_number() over(partition by deptno order by sal desc ) as num from emp_w) w where w.num<=2;
+字符串切分：split 返回一个数组
+split(line,',')
+
+explode 将集合进行拆分，行变列。
+使用sql实现 wc：select s.word,count(*)  from (select explode(split(line,',')) as word from wc) s gr
+oup by s.word; 
+
+行转列 lateral view
+huangyi	["60","65","59"]
+nizhou	["90","80","60"]
+
+select name,ww from score lateral view explode(score) s as ww;
+huangyi	60
+huangyi	65
+huangyi	59
+nizhou	90
+nizhou	80
+nizhou	60
+
+
+hive的udf：
+udf 实际上是分为三种：udf ，udaf，udtf
+udf是对每一行数据进行处理，输入一行，输出一行
+udaf 是对多行数据进行聚合，输入多行，输出一行
+udtf 是对多行数据进行处理，输入一行，输出多行。
+
+
+hive-jdbc依赖
+方式 maven依赖
+    <!-- hive-udf -->
+ <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+
+
+
+第一步：写java代码，实现业务逻辑。
+第二步：打成jar包，上传到hive的资源中。
+第三步：在hive中添加jar资源。
+add jar /usr/local/soft/testdata/shujia03_up.jar;
+
+第四步：创建自定义函数，加载到hive系统中
+CREATE TEMPORARY FUNCTION shujia_UP as 'demo.shujia003.Hive_udf_up';
+删除函数： DROP TEMPORARY FUNCTION shujia_UP；
+
+显示当前数据库：set hive.cli.print.current.db=true;
+跨库查询 库名.表名：select a.*,b.* from score a left join shujia003.score b on a.name=b.name
+
+本地操作：操作hdfs ：
+dfs -ls /;
+操作linux：
+!ls /usr/local/soft
+
+hive 的shell 操作（重点），
+hive -e “select * from wc_test”   是直接执行命令
+hive -f   /usr/local/testdata/test.hql   执行sql脚本
+如果有定时任务，可以将命令写进shell脚本，加入定时器。
+
+
+
+
+
+
+
+
+
+
+
+

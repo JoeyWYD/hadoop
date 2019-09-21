@@ -1,0 +1,10 @@
+sqoop import \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table student \
+--hbase-create-table \
+--hbase-table student \
+--column-family info \
+--hbase-row-key id \
+--m 1

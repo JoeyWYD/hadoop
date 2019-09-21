@@ -1,0 +1,5 @@
+computer,zhangsan,100,90,80,90
+math,lisi,100,90
+computer,wangwu,100,90,80,100
+english,xiaoming,100,90,70,90
+math,xiaohuang,100

@@ -1,0 +1,109 @@
+﻿hive 0.14版本之前，数据不支持更新删除操作。就是不支持update或者delete操作。
+hive1.x版本以后，支持。但是默认不开启，需要修改配置文件。h
+特点：支持sql，支持海量存储，适合批量处理海量数据
+hive的数据存储格式：
+textfile：没有压缩，占用磁盘大，但是读取速度快。textfile类型的表可以直接加载数据
+rcfile：有压缩，需要解压。读取速度相对textfile慢一些，只能从其他表中加载数据，不能直接加载数据。
+hive的元数据库：hive元数据库（matastore）默认是在derby的，目前都是放在mysql中的。
+mysql中的SDS表和TBLS表等会存放hive的一些元数据表信息，存储路径，权限等等
+所以和表相关的元信息报错，可以排查一下mysql是否正常。
+建表（内部表）：1hive建表，表示没有主键概念的。
+2 hive的内部表就是对应hdfs中的一个目录。
+3 hive建内部表默认下表的位置在hdfs上的/user/hive/warehouse/数据库名称命名的目录.db/表名称命名的目录
+
+
+create table emp
+(
+  EMPNO int,
+  ENAME string,
+  JOB string,
+  MGR string,
+  HIREDATE string,
+  SAL int,
+  COMM int,
+  DEPTNO int
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  //声明列的分隔符
+STORED AS textfile //是指定存储文件的格式。
+location '/emptest'; //指定数据存放位置，如果指定，不会在hdfs上生产对应目录，只是数据存放位置在指定位置
+建表（外部表）：删除表的时候，hdfs上的数据不会被删除。（可以映射hbase的数据）
+create EXTERNAL table emp_ext
+(
+  EMPNO int,
+  ENAME string,
+  JOB string,
+  MGR string,
+  HIREDATE string,
+  SAL int,
+  COMM int,
+  DEPTNO int
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  //声明列的分隔符
+STORED AS textfile //是指定存储文件的格式。
+location '/emptest';  
+
+
+hive加载数据：
+1 可以将本地文件 导入到 hive表中：
+load data local inpath '/test/' into table dianxin_test;
+#hive在加载数据的时候，不会去校验数据格式，当查询的时候也就是读的时候会校验格式，所以说hive是读时模式。
+2 可以将hdfs 上的数据文件加载到hive表中；
+load data  inpath '/emptext/' into table dianxin_test;
+3 可以从其他表中加载数据
+insert into emp_rc select * from emp;
+4 建表时候加载数据 create table emp_s as select * from emp;
+
+分区表：可以提高查询效率，对业务数据进行划分，一般情况下，分区是按照日期或者地理位置进行分区的。
+create  table emp_part
+(
+  EMPNO int,
+  ENAME string,
+  JOB string,
+  MGR string,
+  HIREDATE string,
+  SAL int,
+  COMM int,
+  DEPTNO int
+)PARTITIONED BY (date_time string) //date_time 是表的分区字段。
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+STORED AS textfile; 
+
+多级分区：多个分区字段，从左到右是有顺序的，最右边的分区字段是最后一级目录；
+注意：并不是分区越多越好，一般情况下，分区不会超过3级，一级分区是最多的。分区如果太多，反而会降低查询效率。
+create  table emp_part2
+(
+  EMPNO int,
+  ENAME string,
+  JOB string,
+  MGR string,
+  HIREDATE string,
+  SAL int,
+  COMM int,
+  DEPTNO int
+)PARTITIONED BY (date_time string,area string) 
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+STORED AS textfile; 
+
+
+ 分区实际上是表在hdfs中的一个子目录。子目录的名称是以分区值命名。
+ 导入数据：
+ load data local inpath '/usr/local/soft/testdata/empdata.txt' into table emp_part p
+artition(date_time='20180228');
+也可以从其他表插入数据
+insert into  emp_part partition(date_time='20180101') select * from emp;
+增加分区值：
+alter table emp_part add partition(date_time='20180229');
+
+动态分区：
+开启动态分区支持
+hive>set hive.exec.dynamic.partition=true;
+hive>set hive.exec.dynamic.partition.mode=nostrict;
+hive>set hive.exec.max.dynamic.partitions.pernode=1000;
+加大动态分区数
+
+操作语句
+insert into table anhui_air partition (dt) select part,pm25,date_time from anhui_air2;
+开启后，查询的语句中最后的对应的字段作为动态分区的字段，会按照这个字段进行分区，
+相同的值会放到同一个分区
+
+insert into emp_part partition(date_time) select *,HIREDATE from emp;

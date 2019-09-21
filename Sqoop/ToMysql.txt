@@ -1,0 +1,9 @@
+sqoop export \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table student \
+--export-dir /user/input/student/ \
+--columns id,name,age,gender,clazz \
+--fields-terminated-by ',' \
+--m 1

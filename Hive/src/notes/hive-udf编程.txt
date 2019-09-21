@@ -1,0 +1,20 @@
+hive的udf：
+udf 实际上是分为三种：udf ，udaf，udtf
+udf是对每一行数据进行处理，输入一行，输出一行
+udaf 是对多行数据进行聚合，输入多行，输出一行
+udtf 是对多行数据进行处理，输入一行，输出多行。
+
+方式 maven依赖
+    <!-- hive-udf -->
+ <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+第一步：写java代码，实现业务逻辑。
+第二步：打成jar包，上传到hive的资源中。
+第三步：在hive中添加jar资源。
+add jar /usr/local/soft/testdata/shujia03_up.jar;
+第四步：创建自定义函数，加载到hive系统中
+CREATE TEMPORARY FUNCTION shujia_UP as 'demo.shujia003.Hive_udf_up';
+删除函数： DROP TEMPORARY FUNCTION shujia_UP；

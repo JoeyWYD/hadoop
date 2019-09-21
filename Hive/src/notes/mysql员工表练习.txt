@@ -1,0 +1,145 @@
+﻿一 将下列数据插入mysql表。
+DROP TABLE IF EXISTS  `emp`;
+CREATE TABLE `emp` (
+  `EMPNO` int(4) NOT NULL,
+  `ENAME` varchar(10) DEFAULT NULL,
+  `JOB` varchar(9) DEFAULT NULL,
+  `MGR` varchar(10) DEFAULT NULL,
+  `HIREDATE` date DEFAULT NULL,
+  `SAL` int(7) DEFAULT NULL,
+  `COMM` int(7) DEFAULT NULL,
+  `DEPTNO` int(2) DEFAULT NULL,
+  PRIMARY KEY (`EMPNO`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+create table if not exists emp(
+empno string,
+ename string,
+job string,
+mgr string,
+hiredata string,
+sal string,
+comm string,
+deptno string
+)row format delimited fields terminated by ',';
+
+
+字段中文名字依次是：工号，姓名，工作岗位，部门经理，受雇日期，薪金，奖金，部门编号
+insert into `emp`(`EMPNO`,`ENAME`,`JOB`,`MGR`,`HIREDATE`,`SAL`,`COMM`,`DEPTNO`) values
+('7369','SMITH','CLERK','7902',    '1980-12-17','800',  null, '20'),
+('7499','ALLEN','SALESMAN','7698', '1981-02-20','1600','300', '30'),
+('7521','WARD','SALESMAN','7698',  '1981-02-22','1250','500', '30'),
+('7566','JONES','MANAGER','7839',  '1981-04-02','2975', null, '20'),
+('7654','MARTIN','SALESMAN','7698','1981-09-28','1250','1400','30'),
+('7698','BLAKE','MANAGER','7839',  '1981-05-01','2850', null, '30'),
+('7782','CLARK','MANAGER','7839',  '1981-06-09','2450', null, '10'),
+('7788','SCOTT','ANALYST','7566',  '1987-04-19','3000', null, '20'),
+('7839','KING','PRESIDENT',null,   '1981-11-17','5000', null, '10'),
+('7844','TURNER','SALESMAN','7698','1981-09-08','1500', '0',  '30'),
+('7876','ADAMS','CLERK','7788',    '1987-05-23','1100', null, '20'),
+('7900','JAMES','CLERK','7698',    '1981-12-03','950',  null, '30'),
+('7902','FORD','ANALYST','7566',   '1981-12-03','3000', null, '20'),
+('7934','MILLER','CLERK','7782',   '1982-01-23','1300', null, '10');
+
+DROP TABLE IF EXISTS  `dept`;
+CREATE TABLE `dept` (
+  `DEPTNO` int(2) NOT NULL,
+  `DNAME` varchar(14) DEFAULT NULL,
+  `LOC` varchar(13) DEFAULT NULL,
+  PRIMARY KEY (`DEPTNO`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+create table if not exists dept(
+deptno string,
+dname string,
+loc string
+)row format delimited fields terminated by ',';
+
+insert into `dept`(`DEPTNO`,`DNAME`,`LOC`) values
+('10','ACCOUNTING  ','NEW YORK'),
+('20','RESEARCH    ','DALLAS'),
+('30','SALES       ','CHICAGO'),
+('40','OPERATIONS  ','BOSTON');
+
+然后查询（sql和运行结果截图）：
+1． 列出至少有4个员工的所有部门编号和名称。
+(1)select d.deptno,d.dname,count(*) cn 
+from emp e join dept d on e.deptno=d.deptno group by d.deptno,d.dname having cn>3;
+
+(2)select d.deptno,d.dname,cn 
+from (select deptno,count(*) cn from emp group by deptno) e join dept d 
+on e.deptno=d.deptno where e.cn>3;
+
+2． 列出薪金比“SMITH”多的所有员工。
+select e1.* from emp e1,(select * from emp where ename="SMITH") e2 
+where cast(e1.sal as int)>cast(e2.sal as int);
+
+ 
+3． 列出所有员工的姓名及其直接上级的姓名。
+select e1.ename,e2.ename from emp e1 join emp e2 on e1.mgr=e2.empno;
+ 
+4． 列出受雇日期早于其直接上级的所有员工。 
+select e1.* from emp e1 join emp e2 on e1.mgr=e2.empno 
+where unix_timestamp(e1.hiredata,"yyyy-MM-dd")<unix_timestamp(e2.hiredata,"yyyy-MM-dd");
+
+5． 列出部门名称和这些部门的员工信息，同时列出那些没有员工的部门。 
+select * from dept d left join emp e on d.deptno=e.deptno; 
+
+6． 列出所有“CLERK”（办事员）的姓名及其部门名称。 
+select e.ename,d.dname from emp e join dept d on e.deptno=d.deptno 
+where e.job="CLERK";
+
+7． 列出最低薪金大于1500的各种工作。 
+select job,min(cast(sal as int)) min_sal from emp group by job having min_sal>1500;
+
+
+8． 列出在部门“SALES”（销售部）工作的员工的姓名，假定不知道销售部的部门编号
+select e.ename,d.dname from emp e join dept d on e.deptno=d.deptno 
+where d.dname="SALES";
+
+9． 列出薪金高于公司平均薪金的所有员工。 
+select * from emp e,(select avg(cast(sal as int)) avg_sal from emp) s 
+where e.sal>s.avg_sal;
+
+
+10．列出与“SCOTT”从事相同工作的所有员工。 
+select e.* from emp e,(select * from emp where ename="SCOTT") s 
+where e.job=s.job;
+select e.* from emp e join emp s on e.job=s.job
+where s.ename="SCOTT";
+
+11．列出薪金等于部门30中员工的薪金的所有员工的姓名和薪金。
+select distinct e1.* from emp e1 join emp e2 on e1.sal=e2.sal where e1.deptno="30";
+ 
+12．列出薪金高于在部门30工作的所有员工的薪金的员工姓名和薪金。 
+select e.ename,e.sal from emp e,(select max(cast(sal as int)) max_sal from emp where deptno="30") m 
+where e.sal>m.max_sal;
+
+13．列出在每个部门工作的员工数量、平均工资和平均服务期限。 
+select deptno,count(*) cn,avg(cast(sal as int)) avg_sal,
+avg(unix_timestamp()-unix_timestamp(hiredata,"yyyy-MM-dd"))/60/60/24 server_time 
+from emp group by deptno;
+
+avg(datediff(from_unix(unix_timestamp,"yyyy-MM-dd"),hiredata))
+
+14．列出所有员工的姓名、部门名称和工资。 
+select e.ename,d.dname,e.sal from emp e join dept d on e.deptno=d.deptno;
+
+15．列出所有部门的详细信息和部门人数。 
+select d.*,e.cn from (select deptno,count(*) cn from emp group by deptno) e join dept d on e.deptno=d.deptno;
+
+16．列出各种工作的最低工资。 
+select job,min(cast(sal as int)) sal from emp group by job;
+
+17．列出各个部门的MANAGER（经理）的最低薪金。 
+select deptno,job,min(cast(sal as int)) sal from emp group by deptno,job having job="MANAGE";
+select * from emp  where job="MANAGE" order by cast(sal as int) limit 1;
+
+18．列出所有员工的年工资,按年薪从低到高排序。
+select ename,(cast(sal as int)*12+cast(if(comm="null","0",comm) as int)) year_sal from emp order by year_sal;
+
+思考： 列出每个部门薪水前两名最高的人员名称以及薪水
+select e.deptno,e.ename,e.sal from 
+(select deptno,ename,sal,(row_number() over(partition by deptno order by cast(sal as int) desc)) rank from emp) e 
+where e.rank <3;
+

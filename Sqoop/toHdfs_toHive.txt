@@ -1,0 +1,79 @@
+﻿sqoop import \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table student \
+--m 2 \
+--split-by id \
+--target-dir /user/input/student \
+--fields-terminated-by ','
+
+sqoop import \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table student \
+--m 1 \
+--as-textfile \
+--hive-import \
+--create-hive-table \
+--hive-table shujia001.student \
+--fields-terminated-by ','
+
+## ----incremental append student \  #指定hive表为增量导入模式
+
+
+
+
+
+-----------------------------------------------------------------
+
+sqoop import \
+--connect jdbc:mysql://master:3306/test \
+--username root \
+--password 123456 \
+--table city_air \
+--m 1 \
+--as-textfile \
+--hive-import \
+--create-hive-table \
+--hive-table pm.city_air \
+--fields-terminated-by ',' \
+--driver com.mysql.jdbc.Driver 
+
+
+create table pmemp
+(
+  dt date,
+  id int,
+  pm25 int,
+  address  string,
+  city string
+ )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  
+STORED AS textfile ;
+
+insert into  pmemp select dt,id,pm25,address,city from pm join city_air on pm.id=city_air.id
+
+id,address,city,avg_pm25
+
+create table avg_pm
+(
+  id int,
+  address  string,
+  city string,
+  avg_pm25 int
+ )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','  
+STORED AS textfile ;
+
+insert into  avg_pm select c.rank,b.address,b.city,c.t 
+from (
+
+select (row_number() over ( order by a.id) rank,a.z t 
+
+from (select id,avg(pm25) z from pmemp group by id)
+
+ a join pmemp b on a.id=b.id ) c);
+
+

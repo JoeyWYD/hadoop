@@ -1,0 +1,21 @@
+sqoop import \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table city_air \
+--hive-import \
+--hive-table shujia001.city_air \
+--create-hive-table \
+--fields-terminated-by ',' \
+--m 1
+
+sqoop import \
+--connect jdbc:mysql://master:3306/shujia001 \
+--username root \
+--password 0613 \
+--table pm25 \
+--hive-import \
+--hive-table shujia001.pm25 \
+--create-hive-table \
+--fields-terminated-by ',' \
+--m 1
